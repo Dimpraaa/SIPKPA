@@ -1,0 +1,7 @@
+<x-layout :title="$angkatan->exists ? 'Ubah Angkatan' : 'Tambah Angkatan'" description="Lengkapi identitas, periode, dan status pelaksanaan pendidikan.">
+    <form method="POST" action="{{ $angkatan->exists ? route('angkatan.update', $angkatan) : route('angkatan.store') }}" class="panel max-w-3xl p-6 sm:p-8">@csrf @if($angkatan->exists) @method('PUT') @endif
+        <div class="grid gap-6 sm:grid-cols-2"><x-field name="kode_angkatan" label="Kode angkatan" :value="$angkatan->kode_angkatan" maxlength="255" /><x-field name="nama_angkatan" label="Nama angkatan" :value="$angkatan->nama_angkatan" maxlength="255" /><x-field name="tanggal_mulai" label="Tanggal mulai" type="date" :value="$angkatan->tanggal_mulai?->format('Y-m-d')" /><x-field name="tanggal_selesai" label="Tanggal selesai" type="date" :value="$angkatan->tanggal_selesai?->format('Y-m-d')" />
+        <div><label class="label" for="status_angkatan">Status angkatan</label><select name="status_angkatan" id="status_angkatan" class="input" required>@foreach(['berjalan' => 'Berjalan', 'selesai' => 'Selesai'] as $value => $label)<option value="{{ $value }}" @selected(old('status_angkatan', $angkatan->status_angkatan) === $value)>{{ $label }}</option>@endforeach</select></div></div>
+        <div class="mt-8 flex gap-3 border-t border-slate-100 pt-6"><button class="btn" type="submit">Simpan angkatan</button><a href="{{ route('angkatan.index') }}" class="btn-secondary">Batal</a></div>
+    </form>
+</x-layout>

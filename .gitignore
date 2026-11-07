@@ -1,0 +1,35 @@
+# Local environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
+**/auth.json
+
+# Installed dependencies
+webapp/vendor/
+webapp/node_modules/
+ml-service/venv/
+ml-service/.venv/
+
+# Generated frontend output and framework caches
+webapp/public/build/
+webapp/public/hot
+webapp/storage/framework/cache/data/*
+webapp/storage/framework/sessions/*
+webapp/storage/framework/views/*
+webapp/storage/logs/*.log
+webapp/bootstrap/cache/*.php
+webapp/.agents/
+webapp/.claude/
+
+# Python caches and local model artifacts
+ml-service/__pycache__/
+ml-service/**/*.py[cod]
+ml-service/models/*.pkl
+ml-service/models/*.joblib
+ml-service/models/*.tmp
+
+# Local editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,8 @@
+<x-layout title="Angkatan PKPA" description="Kelola periode pendidikan dan status kegiatan setiap angkatan.">
+    @if(auth()->user()->role === 'admin_akademik')
+        <x-slot:actions><a href="{{ route('angkatan.create') }}" class="btn">+ Tambah angkatan</a></x-slot:actions>
+    @endif
+    <div class="panel overflow-hidden"><div class="overflow-x-auto"><table class="w-full"><thead class="bg-slate-50"><tr><th>Angkatan</th><th>Periode</th><th>Peserta</th><th>Status</th><th>Tindakan</th></tr></thead><tbody>
+        @forelse($angkatan as $item)<tr><td><p class="font-semibold">{{ $item->nama_angkatan }}</p><p class="mt-1 text-xs text-slate-400">{{ $item->kode_angkatan }}</p></td><td>{{ $item->tanggal_mulai->format('d M Y') }}<br><span class="text-slate-400">s.d. {{ $item->tanggal_selesai->format('d M Y') }}</span></td><td>{{ $item->peserta_count }}</td><td><x-status :value="$item->status_angkatan" /></td><td><div class="flex flex-wrap items-center gap-3"><a class="link" href="{{ route('peserta.index', ['angkatan_id' => $item->id]) }}">Peserta</a>@if(auth()->user()->role === 'admin_akademik')<a class="link" href="{{ route('angkatan.edit', $item) }}">Ubah</a><form method="POST" action="{{ route('angkatan.destroy', $item) }}" data-confirm="Hapus angkatan ini?">@csrf @method('DELETE')<button type="submit" class="btn-danger">Hapus</button></form>@endif</div></td></tr>@empty<tr><td colspan="5" class="empty">Belum ada angkatan. Tambahkan angkatan pertama untuk memulai.</td></tr>@endforelse
+    </tbody></table></div><div class="border-t border-slate-100 p-5">{{ $angkatan->links() }}</div></div>
+</x-layout>
