@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './peserta.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -28,4 +29,22 @@
     .label { @apply mb-2 block text-sm font-semibold text-slate-700; }
     .link { @apply font-semibold text-teal-700 hover:text-teal-900; }
     .empty { @apply px-6 py-12 text-center text-sm text-slate-500; }
+    .recap-table-scroll {
+        height: clamp(20rem, 65vh, 40rem);
+        overflow: auto;
+        scrollbar-gutter: stable;
+        overscroll-behavior: contain;
+    }
+    .recap-table-scroll thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--color-slate-50);
+        box-shadow: 0 1px 0 var(--color-slate-200);
+    }
+    .pagination-loading { @apply hidden items-center gap-2 text-xs font-medium text-teal-700; }
+    [data-pagination-region][aria-busy='true'] { cursor: progress; }
+    [data-pagination-region][aria-busy='true'] .pagination-loading { display: inline-flex; }
+    [data-pagination-region][aria-busy='true'] table,
+    [data-pagination-region][aria-busy='true'] [data-pagination-content] { opacity: .5; }
 }

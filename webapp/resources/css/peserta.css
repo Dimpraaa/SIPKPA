@@ -1,0 +1,94 @@
+@layer components {
+    .peserta-page {
+        --peserta-primary: #0b2927;
+        --peserta-accent: #087e72;
+        --peserta-border: #dce4e7;
+        --peserta-muted: #52636b;
+        background: #f7f9fa;
+        font-family: var(--font-sans);
+    }
+
+    .peserta-page-title { @apply text-[28px] leading-tight font-semibold; color: var(--peserta-primary); }
+    .peserta-page .page-header p { @apply max-w-xl leading-6; color: var(--peserta-muted); }
+    .peserta-header-actions { @apply flex shrink-0 flex-wrap gap-3; }
+    .peserta-page .btn, .peserta-page .btn-secondary { @apply min-h-11 rounded-md shadow-none; }
+    .peserta-page .btn { background: var(--peserta-primary); }
+    .peserta-page .btn:hover { background: var(--peserta-accent); }
+    .peserta-page .btn-secondary { border-color: var(--peserta-border); }
+    .peserta-page .input { @apply min-h-11 min-w-0 rounded-md; border-color: #c4d0d5; }
+    .peserta-page .input::placeholder { color: #667780; }
+    .peserta-page .label { @apply mb-2 text-xs font-medium; color: var(--peserta-muted); }
+
+    .peserta-workspace { @apply min-w-0 rounded-lg border bg-white; border-color: var(--peserta-border); }
+    .peserta-section-heading { @apply flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-5 py-3; border-color: var(--peserta-border); }
+    .peserta-section-heading h2 { @apply text-sm; color: var(--peserta-primary); }
+    .peserta-import { @apply inline-flex min-h-10 items-center gap-2 text-sm font-medium; color: var(--peserta-accent); }
+    .peserta-import:hover { @apply underline underline-offset-4; }
+    .peserta-filters { @apply grid items-end gap-4 p-5; grid-template-columns: minmax(13rem, 1.5fr) minmax(10rem, 1fr) minmax(10rem, 1fr); }
+    .peserta-filters > div { min-width: 0; }
+    .peserta-filter-actions { @apply flex flex-wrap items-center gap-4; grid-column: 1 / -1; }
+    .peserta-filter-actions .btn-secondary { color: var(--peserta-primary); font-weight: 600; }
+    .peserta-reset { @apply inline-flex min-h-11 items-center text-sm underline underline-offset-4; color: var(--peserta-muted); }
+    .peserta-reset:hover { color: var(--peserta-primary); }
+    .peserta-table-context { @apply flex flex-wrap justify-between gap-x-4 gap-y-2 border-t px-5 py-3 text-xs leading-5; border-color: var(--peserta-border); color: var(--peserta-muted); }
+    .peserta-scroll-help { @apply px-5 pb-3 text-xs leading-5; color: var(--peserta-muted); }
+    .peserta-table-scroll { @apply relative overflow-x-auto; scrollbar-gutter: stable; }
+    .peserta-table { width: 100%; min-width: 880px; border-collapse: collapse; }
+    .peserta-table-is-empty { min-width: 0; }
+    .peserta-table thead { background: #f3f6f7; }
+    .peserta-table thead th { @apply px-4 py-3 text-xs font-semibold tracking-normal normal-case; color: var(--peserta-muted); }
+    .peserta-table tbody tr { border-top: 1px solid #e7edef; }
+    .peserta-table tbody tr:hover { background: #f7faf9; }
+    .peserta-table td, .peserta-table .peserta-identity { @apply px-4 py-3 align-middle text-sm; }
+    .peserta-table th:first-child { @apply pl-5; }
+    .peserta-table td:last-child, .peserta-table thead th:last-child { @apply pr-5; }
+    .peserta-table .peserta-identity { @apply min-w-48 text-left font-medium tracking-normal normal-case; width: 28%; white-space: normal; }
+    .peserta-identity a { @apply inline-block rounded-sm leading-5 hover:underline hover:underline-offset-4; color: var(--peserta-primary); overflow-wrap: anywhere; }
+    .peserta-number { @apply mt-1 block text-xs font-normal leading-4; color: var(--peserta-muted); overflow-wrap: anywhere; }
+    .peserta-cohort { min-width: 9rem; max-width: 14rem; overflow-wrap: anywhere; color: #40535c; }
+    .peserta-status { white-space: nowrap; }
+    .peserta-below-standard { @apply mt-1 block whitespace-nowrap text-[11px] font-normal; color: #a1393a; }
+    .peserta-row-actions { @apply flex items-center justify-end gap-2 whitespace-nowrap; }
+    .peserta-detail { @apply inline-flex min-h-10 items-center rounded-md px-2 text-sm font-semibold hover:underline hover:underline-offset-4; color: var(--peserta-accent); }
+    .peserta-table .peserta-empty { @apply px-5 py-14 text-center; white-space: normal; }
+    .peserta-empty h3 { @apply text-base font-semibold; color: var(--peserta-primary); }
+    .peserta-empty p { @apply mx-auto mt-2 max-w-md text-sm leading-6; color: var(--peserta-muted); }
+    .peserta-empty .btn-secondary { @apply mt-5; }
+    .peserta-table-footer { @apply border-t p-5; border-color: var(--peserta-border); }
+    .peserta-load-error { @apply border-t border-rose-200 bg-rose-50 px-5 py-4 text-sm leading-6 text-rose-900; }
+    .peserta-load-error .peserta-reset { color: inherit; }
+    .peserta-page [data-pagination-controls] a, .peserta-page [data-pagination-controls] [aria-current='page'] { @apply rounded-md shadow-none; }
+
+    .action-menu { @apply shrink-0 text-sm font-normal; }
+    .action-menu summary { @apply flex min-h-10 cursor-pointer list-none items-center justify-center gap-1 rounded-md border border-slate-200 px-2.5 text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600; }
+    .action-menu summary::-webkit-details-marker { display: none; }
+    .action-menu[open] summary { @apply bg-slate-50 text-slate-900; }
+    .action-menu-content { @apply mt-2 w-52 rounded-md border border-slate-200 bg-white p-1 shadow-md; }
+    .action-menu[data-positioned] .action-menu-content { position: fixed; z-index: 40; margin: 0; top: var(--action-menu-top); left: var(--action-menu-left); }
+    .action-menu-content a, .action-menu-content button { @apply flex min-h-11 w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-teal-600; }
+
+    @media (min-width: 1280px) {
+        .peserta-filters { grid-template-columns: minmax(13rem, 1.4fr) minmax(10rem, 1fr) minmax(10rem, 1fr) auto; }
+        .peserta-filter-actions { grid-column: auto; gap: 12px; }
+        .peserta-scroll-help { display: none; }
+    }
+
+    @media (max-width: 767px) {
+        .peserta-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        .peserta-search { grid-column: 1 / -1; }
+        .peserta-table-context { @apply flex-col; }
+    }
+
+    @media (max-width: 479px) {
+        .peserta-page .page-header h1 { @apply text-2xl; }
+        .peserta-filters { grid-template-columns: minmax(0, 1fr); }
+        .peserta-filters, .peserta-table-footer { @apply p-4; }
+        .peserta-section-heading, .peserta-table-context { @apply px-4; }
+        .peserta-scroll-help { @apply px-4; }
+        .peserta-header-actions, .peserta-header-actions .btn { width: 100%; }
+    }
+
+    @media (pointer: coarse) {
+        .peserta-detail, .action-menu summary { min-height: 44px; }
+    }
+}

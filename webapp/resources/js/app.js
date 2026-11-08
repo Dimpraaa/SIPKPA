@@ -1,3 +1,9 @@
+import { initTablePagination } from './table-pagination.js';
+import { initActionMenus } from './action-menu.js';
+
+initTablePagination();
+if (document.querySelector('[data-action-menu]')) initActionMenus();
+
 if (document.querySelector('#dashboard-chart-data')) {
     import('./dashboard-charts').then(({ renderDashboardCharts }) => renderDashboardCharts());
 }
@@ -14,19 +20,19 @@ document.querySelector('[data-menu-toggle]')?.addEventListener('click', (event) 
     navigation.classList.toggle('flex', expanded);
 });
 
-document.querySelectorAll('form[data-confirm]').forEach((form) => {
-    form.addEventListener('submit', (event) => {
-        if (!window.confirm(form.dataset.confirm)) event.preventDefault();
-    });
-});
-
-document.querySelectorAll('form[data-busy]').forEach((form) => {
-    form.addEventListener('submit', () => {
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (event.defaultPrevented) return;
+    if (form.matches('form[data-confirm]') && !window.confirm(form.dataset.confirm)) {
+        event.preventDefault();
+        return;
+    }
+    if (form.matches('form[data-busy]')) {
         form.querySelectorAll('button[type="submit"]').forEach((button) => {
             button.disabled = true;
             button.textContent = 'Sedang memproses…';
         });
-    });
+    }
 });
 
 const gradeInputs = [...document.querySelectorAll('[data-grade]')];

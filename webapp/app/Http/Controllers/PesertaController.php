@@ -18,13 +18,23 @@ class PesertaController extends Controller
 {
     public function index(Request $request): View
     {
-        $filters = $request->validate(['angkatan_id' => ['nullable', 'integer', 'exists:angkatan_pkpa,id'], 'q' => ['nullable', 'string', 'max:100']]);
+        $filters = $request->validate([
+            'angkatan_id' => ['nullable', 'integer', 'exists:angkatan_pkpa,id'],
+            'q' => ['nullable', 'string', 'max:100'],
+            'status_aktual' => ['nullable', 'in:Lulus,Tidak Lulus,Belum Ditentukan,belum_dinilai'],
+        ]);
         $peserta = PesertaPkpa::with(['angkatan', 'penilaian'])
             ->when($filters['angkatan_id'] ?? null, fn ($query, $id) => $query->where('angkatan_id', $id))
             ->when($filters['q'] ?? null, fn ($query, $q) => $query->where(fn ($query) => $query->where('nama_lengkap', 'like', '%'.$q.'%')->orWhere('nomor_peserta', 'like', '%'.$q.'%')))
+            ->when($filters['status_aktual'] ?? null, fn ($query, $status) => $status === 'belum_dinilai'
+                ? $query->whereDoesntHave('penilaian')
+                : $query->whereRelation('penilaian', 'status_aktual', $status))
             ->orderBy('nama_lengkap')->paginate(20)->withQueryString();
 
-        return view('peserta.index', ['peserta' => $peserta, 'angkatan' => AngkatanPkpa::orderByDesc('tanggal_mulai')->get()]);
+        return view('peserta.index', [
+            'peserta' => $peserta, 'angkatan' => AngkatanPkpa::orderByDesc('tanggal_mulai')->get(),
+            'standards' => AcademicReportService::standards(),
+        ]);
     }
 
     public function create(): View
@@ -71,7 +81,11 @@ class PesertaController extends Controller
     {
         $peserta->load(['angkatan', 'penilaian', 'prediksiTerbaru.modelMl']);
 
-        return view('peserta.show', ['peserta' => $peserta, 'features' => PenilaianPkpa::FEATURE_LABELS, 'radarData' => $reports->radarData($peserta), 'riwayat' => $peserta->hasilPrediksi()->with(['modelMl', 'prediktor'])->orderByDesc('tanggal_prediksi')->orderByDesc('id')->paginate(10)]);
+        return view('peserta.show', [
+            'peserta' => $peserta, 'features' => PenilaianPkpa::FEATURE_LABELS,
+            'standards' => AcademicReportService::standards(), 'radarData' => $reports->radarData($peserta),
+            'riwayat' => $peserta->hasilPrediksi()->with(['modelMl', 'prediktor'])->orderByDesc('tanggal_prediksi')->orderByDesc('id')->paginate(10),
+        ]);
     }
 
     public function destroy(PesertaPkpa $peserta): RedirectResponse
