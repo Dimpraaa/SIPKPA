@@ -33,7 +33,7 @@ class ModelMlController extends Controller
         $parameters = [
             'n_estimators' => $request->integer('n_estimators'),
             'max_depth' => $request->filled('max_depth') ? $request->integer('max_depth') : null,
-            'criterion' => $request->validated('criterion'),
+            'criterion' => 'gini',
         ];
         $data = $records->map(function (PenilaianPkpa $record): array {
             $row = [];

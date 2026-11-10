@@ -26,10 +26,13 @@ class DashboardVisualizationTest extends TestCase
 
         $response = $this->get(route('dashboard'));
 
-        $response->assertOk()->assertSee('Dashboard')->assertSee('Rata-rata nilai akhir per angkatan')
-            ->assertSee('Distribusi status kelulusan aktual')->assertSee('Prediksi model tersimpan')
-            ->assertSee('Kontribusi relatif fitur model')->assertSee('Confusion matrix')
-            ->assertSee('pengujian data simulasi model aktif, bukan tingkat kelulusan peserta')->assertDontSee('LUA-');
+        $response->assertOk()->assertSee('Dashboard')->assertSee('Rata-rata Nilai per Angkatan')
+            ->assertSee('Status Kelulusan Aktual')->assertSee('Hasil Prediksi Tersimpan')
+            ->assertSee('Kontribusi fitur')->assertSee('Matriks klasifikasi')
+            ->assertSee('Tidak mengikuti filter angkatan')->assertDontSee('LUA-');
+        $response->assertSeeText('Sudah diprediksi')->assertSeeText('Belum diprediksi')
+            ->assertSeeText('2 peserta (66,7%)')->assertSeeText('1 peserta (33,3%)')
+            ->assertSee('Prediksi terbaru per peserta, dari semua model')->assertSee('RF-Tidak-Aktif');
         $this->assertSame([
             'peserta' => 5, 'lulus' => 2, 'berisiko' => 1, 'terprediksi' => 3, 'belum_prediksi' => 2, 'cakupan' => 60.0,
         ], $response->viewData('ringkasan'));
@@ -77,12 +80,15 @@ class DashboardVisualizationTest extends TestCase
             ->assertSee(route('laporan.berisiko', ['angkatan_id' => $fixture['x']->id]));
         $this->assertSame($fixture['model']->id, $response->viewData('modelAktif')->id);
         $this->assertCount(2, $response->viewData('riwayat'));
+        $response->assertSeeText('1 peserta (50,0%)');
         $response = $this->get(route('dashboard', ['angkatan_id' => $fixture['xii']->id]));
-        $response->assertOk()->assertSee('Belum ada prediksi tersimpan untuk angkatan yang dipilih.')
+        $response->assertOk()->assertSee('Belum ada hasil prediksi tersimpan.')
             ->assertSee('id="aktual-chart"', false)->assertSee('id="akademik-chart"', false);
         $this->assertSame([0, 0, 1, 0], $this->chartData($response)['aktual']['values']);
         $this->assertSame(['Angkatan XII'], $this->chartData($response)['akademik']['labels']);
         $this->assertSame(0.0, $response->viewData('ringkasan')['cakupan']);
+        $this->get(route('dashboard', ['angkatan_id' => $fixture['xi']->id]))->assertOk()
+            ->assertSeeText('1 peserta (100,0%)')->assertSeeText('0 peserta (0,0%)');
     }
 
     public function test_dashboard_handles_empty_database_and_missing_active_model_without_fake_metrics(): void
@@ -92,7 +98,8 @@ class DashboardVisualizationTest extends TestCase
         $response = $this->get(route('dashboard'));
 
         $response->assertOk()->assertSee('Belum ada model aktif')->assertSee('Belum ada penilaian')->assertSee('Belum ada angkatan berjalan')
-            ->assertDontSee('id="akademik-chart"', false)->assertDontSee('id="aktual-chart"', false);
+            ->assertDontSee('id="akademik-chart"', false)->assertDontSee('id="aktual-chart"', false)
+            ->assertDontSee('id="prediksi-chart"', false)->assertSeeText('0 peserta (—)');
         $this->assertNull($response->viewData('ringkasan')['cakupan']);
         $this->assertSame([0, 0, 0, 0], $this->chartData($response)['aktual']['values']);
         $this->assertSame([], $this->chartData($response)['akademik']['labels']);
@@ -179,7 +186,7 @@ class DashboardVisualizationTest extends TestCase
             'confusion_matrix_json' => ['TP' => 20, 'TN' => 15, 'FP' => 2, 'FN' => 3],
             'feature_importance_json' => array_combine(array_keys(PenilaianPkpa::FEATURE_LABELS), [0.3, 0.05, 0.25, 0.2, 0.1, 0.1]),
         ]);
-        ModelMl::factory()->for($user, 'pembuat')->create(['is_active' => false, 'akurasi' => 99, 'nama_versi' => 'RF-Tidak-Aktif']);
+        $inactiveModel = ModelMl::factory()->for($user, 'pembuat')->create(['is_active' => false, 'akurasi' => 99, 'nama_versi' => 'RF-Tidak-Aktif']);
         $xii = AngkatanPkpa::factory()->create(['nama_angkatan' => 'Angkatan XII', 'tanggal_mulai' => '2026-10-01']);
         $xi = AngkatanPkpa::factory()->create(['nama_angkatan' => 'Angkatan XI', 'tanggal_mulai' => '2025-06-01', 'status_angkatan' => 'selesai']);
         $x = AngkatanPkpa::factory()->create(['nama_angkatan' => 'Angkatan X', 'tanggal_mulai' => '2025-01-01', 'status_angkatan' => 'selesai']);
@@ -195,7 +202,8 @@ class DashboardVisualizationTest extends TestCase
             [$second, 'Lulus', '2026-11-07 10:00:00'],
             [$third, 'Lulus', '2026-11-07 10:00:00'],
         ] as [$nilai, $status, $date]) {
-            HasilPrediksi::factory()->for($nilai, 'penilaian')->for($model, 'modelMl')->for($user, 'prediktor')
+            $predictionModel = $nilai->id === $third->id ? $inactiveModel : $model;
+            HasilPrediksi::factory()->for($nilai, 'penilaian')->for($predictionModel, 'modelMl')->for($user, 'prediktor')
                 ->create(['status_prediksi' => $status, 'tanggal_prediksi' => $date]);
         }
 

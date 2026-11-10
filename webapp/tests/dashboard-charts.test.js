@@ -5,10 +5,10 @@ import { renderDashboardCharts } from '../resources/js/dashboard-charts.js';
 import { renderParticipantRadar } from '../resources/js/participant-radar.js';
 import { renderCohortComparison } from '../resources/js/cohort-comparison.js';
 
-function canvasContext() {
+function canvasContext(width = 800, height = 400) {
     let draws = 0;
     const labels = [];
-    const canvas = { width: 800, height: 400 };
+    const canvas = { width, height };
     const context = new Proxy({
         canvas,
         measureText: (text) => ({ width: String(text).length * 7 }),
@@ -97,6 +97,34 @@ test('prediction composition counts only predicted participants and preserves a 
         assert.equal(prediction.options.animation, false);
     } finally {
         charts.forEach((chart) => chart.destroy());
+    }
+});
+
+test('prediction tooltip shows category, count and share of predicted participants within a compact donut', () => {
+    const target = canvasContext(208, 208);
+    const root = {
+        querySelector(selector) {
+            if (selector === '#dashboard-chart-data') return { textContent: JSON.stringify({ ...data, prediksi: { labels: ['Lulus', 'Berisiko Tidak Lulus'], values: [2, 1] } }) };
+            return selector === '#prediksi-chart' ? target.canvas : null;
+        },
+    };
+
+    const [chart] = renderDashboardCharts(root);
+    try {
+        const position = chart.getDatasetMeta(0).data[1].tooltipPosition();
+        chart.tooltip.setActiveElements([{ datasetIndex: 0, index: 1 }], position);
+        chart.update();
+
+        assert.deepEqual(chart.tooltip.title, ['Berisiko Tidak Lulus']);
+        assert.deepEqual(chart.tooltip.body[0].lines, ['1 peserta (33,3%)']);
+        assert.ok(target.labels.includes('3'));
+        assert.ok(chart.tooltip.width <= target.canvas.width);
+        assert.ok(chart.tooltip.x >= 0);
+        assert.ok(chart.tooltip.x + chart.tooltip.width <= target.canvas.width);
+        assert.ok(chart.tooltip.y >= 0);
+        assert.ok(chart.tooltip.y + chart.tooltip.height <= target.canvas.height);
+    } finally {
+        chart.destroy();
     }
 });
 

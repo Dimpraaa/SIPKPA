@@ -153,6 +153,9 @@ class RandomForestApiTest(unittest.TestCase):
 
                 status, second = request_json(base_url, "/api/train", {"data": data, "n_estimators": 10, "test_size": 0.3, "random_state": 7})
                 self.assertEqual(status, 200, second)
+                self.assertEqual(second["criterion"], "gini")
+                default_model = joblib.load(model_directory / Path(second["file_path_model"]).name)
+                self.assertEqual(default_model.get_params()["criterion"], "gini")
                 self.assertEqual((second["jumlah_data_latih"], second["jumlah_data_uji"]), (140, 60))
                 self.assertNotEqual(trained["file_path_model"], second["file_path_model"])
                 self.assertEqual(request_json(base_url, "/health")[1]["file_path_model"], second["file_path_model"])

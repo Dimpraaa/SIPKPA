@@ -101,9 +101,9 @@
         <main id="main-content" tabindex="-1" class="workspace-main">
             <div class="page-header">
                 <div class="min-w-0">
-                    <p class="eyebrow mb-2">{{ $section }}</p>
+                    @if ($page !== 'dashboard')<p class="eyebrow mb-2">{{ $section }}</p>@endif
                     <h1 class="page-title">{{ $title }}</h1>
-                    <p class="page-description">{{ $description }}</p>
+                    @if ($description !== '')<p class="page-description">{{ $description }}</p>@endif
                 </div>
                 @isset($actions)<div class="page-actions">{{ $actions }}</div>@endisset
             </div>
@@ -120,7 +120,7 @@
             @endif
             <p data-pagination-status role="status" aria-live="polite" aria-atomic="true" class="sr-only"></p>
             {{ $slot }}
-            <footer class="workspace-footer"><span>© {{ date('Y') }} Advokat Propindo · SIPKPA</span><span>Ruang kerja akademik <span aria-hidden="true">/</span> Data simulasi penelitian</span></footer>
+            <footer class="workspace-footer"><span>© {{ date('Y') }} Advokat Propindo · SIPKPA</span>@if ($page !== 'dashboard')<span>Ruang kerja akademik <span aria-hidden="true">/</span> Data simulasi penelitian</span>@endif</footer>
         </main>
     </div>
 </body>

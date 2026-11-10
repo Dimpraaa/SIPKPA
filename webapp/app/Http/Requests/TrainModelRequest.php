@@ -26,7 +26,6 @@ class TrainModelRequest extends FormRequest
             'nama_versi' => ['required', 'string', 'max:255'],
             'n_estimators' => ['required', 'integer', 'between:1,2000'],
             'max_depth' => ['nullable', 'integer', 'between:1,100'],
-            'criterion' => ['required', 'in:gini,entropy'],
         ];
     }
 }

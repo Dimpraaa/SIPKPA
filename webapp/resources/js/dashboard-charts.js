@@ -4,6 +4,22 @@ import { categoryAxis, chartColors, chartDefaults, chartNumber, directLabels, do
 export function dashboardChartConfigs(data) {
     const options = chartDefaults();
     const actualTotal = data.aktual.values.reduce((sum, value) => sum + Number(value), 0);
+    const participantTooltip = {
+        ...options.plugins.tooltip,
+        padding: 8,
+        caretSize: 4,
+        titleMarginBottom: 4,
+        titleFont: { size: 11, weight: '600' },
+        bodyFont: { size: 11 },
+        callbacks: {
+            title: (items) => items[0]?.label ?? '',
+            label(context) {
+                const total = context.dataset.data.reduce((sum, value) => sum + Number(value), 0);
+                const percentage = total > 0 ? Number(context.raw) / total * 100 : 0;
+                return `${chartNumber(context.raw, 0)} peserta (${chartNumber(percentage, 1)}%)`;
+            },
+        },
+    };
 
     const configs = {
         akademik: {
@@ -45,16 +61,7 @@ export function dashboardChartConfigs(data) {
                 plugins: {
                     ...options.plugins,
                     directLabels: { format: (value) => `${chartNumber(value, 0)} · ${chartNumber(actualTotal > 0 ? value / actualTotal * 100 : 0, 1)}%` },
-                    tooltip: {
-                        ...options.plugins.tooltip,
-                        callbacks: {
-                            label(context) {
-                                const total = context.dataset.data.reduce((sum, value) => sum + value, 0);
-                                const percentage = Number(total > 0 ? context.raw / total * 100 : 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
-                                return `${context.label}: ${context.raw} dari ${total} peserta (${percentage}%)`;
-                            },
-                        },
-                    },
+                    tooltip: participantTooltip,
                 },
             },
         },
@@ -72,12 +79,7 @@ export function dashboardChartConfigs(data) {
                 cutout: '78%',
                 plugins: {
                     ...options.plugins,
-                    tooltip: { ...options.plugins.tooltip, callbacks: {
-                        label(context) {
-                            const total = context.dataset.data.reduce((sum, value) => sum + Number(value), 0);
-                            return `${context.label}: ${context.raw} dari ${total} terprediksi (${chartNumber(total > 0 ? context.raw / total * 100 : 0, 1)}%)`;
-                        },
-                    } },
+                    tooltip: participantTooltip,
                 },
             },
         };

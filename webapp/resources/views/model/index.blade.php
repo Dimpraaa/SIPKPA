@@ -12,17 +12,10 @@
                 <p class="mt-2 text-sm text-slate-500"><span class="tabular-nums">{{ $jumlahHistoris }}</span> peserta dengan status aktual tersedia. Data dibagi menjadi 80% data latih dan 20% data uji dengan proporsi kelas yang dipertahankan.</p>
                 </div>
             </div>
-            <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <div class="grid gap-5 md:grid-cols-3">
                 <x-field name="nama_versi" label="Nama versi model" :value="'RF-'.now()->format('Ymd-His')" maxlength="255" />
                 <x-field name="n_estimators" label="Jumlah pohon" type="number" value="100" min="1" max="2000" />
                 <x-field name="max_depth" label="Kedalaman maksimum" type="number" :required="false" min="1" max="100" placeholder="Tanpa batas jika dikosongkan" />
-                <div>
-                    <label class="label" for="criterion">Kriteria pemisahan</label>
-                    <select class="input" name="criterion" id="criterion">
-                        <option value="gini" @selected(old('criterion') === 'gini')>Gini</option>
-                        <option value="entropy" @selected(old('criterion') === 'entropy')>Entropy</option>
-                    </select>
-                </div>
             </div>
             <div class="mt-6 flex flex-wrap items-center gap-4">
                 <button type="submit" class="btn">Latih model</button>
