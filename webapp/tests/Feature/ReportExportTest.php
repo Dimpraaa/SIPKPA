@@ -15,6 +15,8 @@ use Illuminate\Http\UploadedFile;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 use Tests\TestCase;
 
 class ReportExportTest extends TestCase
@@ -40,7 +42,8 @@ class ReportExportTest extends TestCase
 
         $response = $this->get(route('laporan.berisiko', $filters));
 
-        $response->assertOk()->assertSee('=1+1')->assertDontSee('Sudah Lulus')->assertDontSee('Angkatan Lain');
+        $response->assertOk()->assertSee('=1+1')->assertDontSee('Sudah Lulus')->assertDontSee('Angkatan Lain')
+            ->assertSee('Peringatan Dini')->assertSee('Estimasi Tidak Lulus min. (%)')->assertDontSee('LUA-');
         $this->assertSame(1, $response->viewData('total'));
         $row = $response->viewData('rows')[0];
         $this->assertSame(79.99, $row['persen_kehadiran']);
@@ -53,9 +56,12 @@ class ReportExportTest extends TestCase
             $this->assertSame('=1+1', $sheet->getCell('C2')->getValue());
             $this->assertSame(DataType::TYPE_STRING, $sheet->getCell('C2')->getDataType());
             $this->assertSame(79.99, $sheet->getCell('E2')->getValue());
-            $this->assertSame('FEE2E2', $sheet->getStyle('E2')->getFill()->getStartColor()->getRGB());
-            $this->assertSame('FEE2E2', $sheet->getStyle('F2')->getFill()->getStartColor()->getRGB());
-            $this->assertNotSame('FEE2E2', $sheet->getStyle('G2')->getFill()->getStartColor()->getRGB());
+            $this->assertSame('B91C1C', $sheet->getStyle('E2')->getFont()->getColor()->getRGB());
+            $this->assertTrue($sheet->getStyle('E2')->getFont()->getBold());
+            $this->assertSame('B91C1C', $sheet->getStyle('F2')->getFont()->getColor()->getRGB());
+            $this->assertNotSame('B91C1C', $sheet->getStyle('G2')->getFont()->getColor()->getRGB());
+            $this->assertSame(Fill::FILL_NONE, $sheet->getStyle('E2')->getFill()->getFillType());
+            $this->assertSame(Alignment::HORIZONTAL_RIGHT, $sheet->getStyle('E2')->getAlignment()->getHorizontal());
             $this->assertSame(90.0, $sheet->getCell('K2')->getValue());
             $this->assertSame('Pembinaan dan remedial Hukum Acara.', $sheet->getCell('N2')->getValue());
         } finally {
@@ -78,6 +84,7 @@ class ReportExportTest extends TestCase
 
         $response->assertOk()->assertSee('Belum Dinilai')->assertSee('Belum diprediksi')->assertDontSee('Di Luar Angkatan');
         $this->assertSame(2, $response->viewData('total'));
+        $response->assertDontSee('LUA-');
         $rows = collect($response->viewData('rows'))->keyBy('nama_lengkap');
         $this->assertNull($rows['Belum Dinilai']['persen_kehadiran']);
         $this->assertNull($rows['Ada Nilai']['probabilitas_lulus']);
@@ -87,6 +94,32 @@ class ReportExportTest extends TestCase
         $pdf = $this->get(route('laporan.rekap.export', ['format' => 'pdf', 'angkatan_id' => $angkatan->id]));
         $pdf->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->assertStringStartsWith('%PDF-', $pdf->getContent());
+    }
+
+    public function test_recap_comparison_uses_all_assessments_independently_of_table_filters_and_keeps_zero_distinct_from_missing(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'manajemen']));
+        $first = AngkatanPkpa::factory()->create(['nama_angkatan' => 'Angkatan A', 'tanggal_mulai' => '2025-01-01']);
+        $second = AngkatanPkpa::factory()->create(['nama_angkatan' => 'Angkatan B', 'tanggal_mulai' => '2025-06-01']);
+        AngkatanPkpa::factory()->create(['nama_angkatan' => 'Angkatan C', 'tanggal_mulai' => '2026-01-01']);
+        $zero = $this->participant($first, 'Nilai Nol', 'A0', [0, 0, 0, 0, 0, 0]);
+        $zero->penilaian->update(['status_aktual' => 'Tidak Lulus']);
+        $perfect = $this->participant($first, 'Nilai Penuh', 'A100', [100, 100, 100, 100, 100, 100]);
+        $perfect->penilaian->update(['status_aktual' => 'Lulus']);
+        PesertaPkpa::factory()->for($first, 'angkatan')->create();
+        $this->participant($second, 'Nol Belum Ditentukan', 'B0', [0, 0, 0, 0, 0, 0]);
+
+        $response = $this->get(route('laporan.rekap', ['angkatan_id' => $first->id, 'q' => 'Tidak ditemukan']));
+
+        $response->assertOk()->assertSee('terlepas dari filter tabel peserta')->assertSee('id="cohort-comparison-chart"', false);
+        $this->assertSame(0, $response->viewData('total'));
+        $comparison = $response->viewData('comparison');
+        $this->assertSame([50.0, 0.0, null], array_column($comparison, 'rata_rata'));
+        $this->assertSame([2, 1, 0], array_column($comparison, 'dinilai'));
+        $this->assertSame([3, 1, 0], array_column($comparison, 'peserta'));
+        $this->assertSame([1, 0, 0], array_column($comparison, 'lulus'));
+        $this->assertSame([2, 0, 0], array_column($comparison, 'ditentukan'));
+        $this->assertSame($first->id, $response->viewData('comparisonChart')['selected']);
     }
 
     public function test_export_contains_all_matching_rows_instead_of_only_current_page(): void
@@ -136,7 +169,7 @@ class ReportExportTest extends TestCase
 
         $response = $this->get(route('laporan.model', ['criterion' => 'entropy']));
 
-        $response->assertOk()->assertSee('RF-Entropy')->assertDontSee('RF-Gini');
+        $response->assertOk()->assertSee('RF-Entropy')->assertDontSee('RF-Gini')->assertDontSee('LUA-');
         $this->assertSame(1, $response->viewData('models')->total());
         $pdf = $this->get(route('laporan.model.pdf', ['criterion' => 'entropy']));
         $pdf->assertOk()->assertHeader('Content-Type', 'application/pdf');

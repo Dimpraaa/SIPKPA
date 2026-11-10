@@ -29,7 +29,7 @@ class LaporanModelController extends Controller
         $query = ModelMl::with('pembuat')->when($filters['criterion'] ?? null, fn (Builder $query, string $criterion): Builder => $query->where('criterion', $criterion))->latest('id');
 
         return [
-            'title' => 'Riwayat Pengujian Parameter Random Forest', 'kode' => 'LUA-08',
+            'title' => 'Riwayat Evaluasi Model',
             'models' => $export ? $query->get() : $query->paginate(20)->withQueryString(),
             'export' => $export, 'filters' => $filters, 'printedAt' => now(), 'printedBy' => $request->user()->nama_lengkap,
         ];

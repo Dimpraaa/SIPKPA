@@ -19,7 +19,7 @@ class KhsController extends Controller
         $data = $reports->radarData($peserta);
 
         return Pdf::loadView('laporan.pdf.khs', [
-            'title' => 'Kartu Hasil Studi & Evaluasi Individual', 'kode' => 'LUA-07',
+            'title' => 'Kartu Hasil Studi dan Evaluasi Peserta',
             'peserta' => $peserta, 'features' => PenilaianPkpa::FEATURE_LABELS,
             'standards' => AcademicReportService::standards(), 'radarImage' => $radar->pngDataUri($data['values'], $data['standards']),
             'row' => $reports->rows(collect([$peserta]))[0],

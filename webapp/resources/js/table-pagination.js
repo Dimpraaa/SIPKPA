@@ -59,7 +59,7 @@ export function initTablePagination(root = document, browser = window) {
                 if (error) {
                     error.hidden = false;
                     error.querySelector('[data-pagination-retry]').href = url.href;
-                    if (status) status.textContent = 'Daftar peserta belum dapat dimuat. Silakan coba lagi.';
+                    if (status) status.textContent = error.dataset?.paginationErrorMessage ?? 'Daftar peserta belum dapat dimuat. Silakan coba lagi.';
                 } else {
                     browser.location.assign(url.href);
                 }

@@ -1,116 +1,128 @@
 import Chart from 'chart.js/auto';
-
-const featureColors = ['#0d9488', '#0284c7', '#6366f1', '#d97706', '#db2777', '#64748b'];
-const percent = (value) => `${Number(value).toLocaleString('id-ID', { maximumFractionDigits: 2 })}%`;
-const numeric = (value) => Number(value).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+import { categoryAxis, chartColors, chartDefaults, chartNumber, directLabels, donutTotal, valueAxis } from './chart-theme.js';
 
 export function dashboardChartConfigs(data) {
-    const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        locale: 'id-ID',
-        plugins: {
-            legend: { labels: { usePointStyle: true, boxWidth: 8, padding: 16, font: { size: 11 } } },
-        },
-    };
+    const options = chartDefaults();
+    const actualTotal = data.aktual.values.reduce((sum, value) => sum + Number(value), 0);
 
-    return {
-        proporsi: {
-            type: 'doughnut',
+    const configs = {
+        akademik: {
+            type: 'bar',
             data: {
-                labels: data.proporsi.labels,
-                datasets: [{ data: data.proporsi.values, backgroundColor: ['#0d9488', '#f43f5e'], borderWidth: 3, borderColor: '#ffffff', hoverOffset: 5 }],
+                labels: data.akademik.labels,
+                datasets: [{ label: 'Nilai akhir rata-rata (0–100)', data: data.akademik.values, backgroundColor: chartColors.brand, borderRadius: 2, maxBarThickness: 24 }],
             },
+            plugins: [directLabels],
             options: {
                 ...options,
-                cutout: '74%',
+                indexAxis: 'y',
+                layout: { padding: { right: 48 } },
                 plugins: {
-                    legend: { display: false },
+                    ...options.plugins,
+                    tooltip: { ...options.plugins.tooltip, callbacks: {
+                        label: (context) => `Nilai akhir: ${chartNumber(context.raw)} / 100`,
+                        afterLabel: (context) => data.akademik.counts ? `${chartNumber(data.akademik.counts[context.dataIndex], 0)} penilaian tersedia` : '',
+                    } },
+                },
+                scales: {
+                    x: valueAxis('Nilai akhir rata-rata · skala 0–100', 100),
+                    y: categoryAxis(),
+                },
+            },
+        },
+        aktual: {
+            type: 'bar',
+            data: {
+                labels: data.aktual.labels,
+                datasets: [{ label: 'Jumlah peserta', data: data.aktual.values, backgroundColor: [chartColors.brand, chartColors.danger, chartColors.neutral, chartColors.light], borderRadius: 2, maxBarThickness: 24 }],
+            },
+            plugins: [directLabels],
+            options: {
+                ...options,
+                indexAxis: 'y',
+                layout: { padding: { right: 92 } },
+                scales: { x: valueAxis('Jumlah peserta'), y: categoryAxis(18) },
+                plugins: {
+                    ...options.plugins,
+                    directLabels: { format: (value) => `${chartNumber(value, 0)} · ${chartNumber(actualTotal > 0 ? value / actualTotal * 100 : 0, 1)}%` },
                     tooltip: {
+                        ...options.plugins.tooltip,
                         callbacks: {
                             label(context) {
                                 const total = context.dataset.data.reduce((sum, value) => sum + value, 0);
-                                return `${context.label}: ${context.raw} peserta (${percent(total > 0 ? context.raw / total * 100 : 0)})`;
+                                const percentage = Number(total > 0 ? context.raw / total * 100 : 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+                                return `${context.label}: ${context.raw} dari ${total} peserta (${percentage}%)`;
                             },
                         },
                     },
                 },
             },
         },
-        tren: {
-            type: 'bar',
+    };
+    if (data.prediksi) {
+        configs.prediksi = {
+            type: 'doughnut',
+            plugins: [donutTotal],
             data: {
-                labels: data.tren.labels,
-                datasets: [
-                    ...data.tren.komponen.map((feature, index) => ({
-                        type: 'bar', label: `X${index + 1} · ${feature.label}`, data: feature.values,
-                        backgroundColor: featureColors[index], borderRadius: 4, maxBarThickness: 24,
-                        yAxisID: 'nilai', order: 2,
-                    })),
-                    {
-                        type: 'line', label: 'Kelulusan aktual (%)', data: data.tren.kelulusan,
-                        borderColor: '#0f172a', backgroundColor: '#0f172a', borderWidth: 2,
-                        pointRadius: 4, pointHoverRadius: 6, borderDash: [5, 4],
-                        tension: 0.2, spanGaps: false, yAxisID: 'kelulusan', order: 1,
-                    },
-                ],
+                labels: data.prediksi.labels,
+                datasets: [{ data: data.prediksi.values, backgroundColor: [chartColors.brand, chartColors.warning], borderWidth: 3, borderColor: '#ffffff', hoverOffset: 0 }],
             },
             options: {
                 ...options,
-                interaction: { mode: 'index', intersect: false },
+                cutout: '78%',
                 plugins: {
                     ...options.plugins,
-                    legend: { ...options.plugins.legend, position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => `${context.dataset.label}: ${context.dataset.yAxisID === 'kelulusan' ? percent(context.raw) : numeric(context.raw)}`,
+                    tooltip: { ...options.plugins.tooltip, callbacks: {
+                        label(context) {
+                            const total = context.dataset.data.reduce((sum, value) => sum + Number(value), 0);
+                            return `${context.label}: ${context.raw} dari ${total} terprediksi (${chartNumber(total > 0 ? context.raw / total * 100 : 0, 1)}%)`;
                         },
-                    },
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                    nilai: { type: 'linear', position: 'left', min: 0, max: 100, title: { display: true, text: 'Rata-rata X1–X6 (0–100)' }, grid: { color: '#f1f5f9' } },
-                    kelulusan: { type: 'linear', position: 'right', min: 0, max: 100, title: { display: true, text: 'Kelulusan aktual (%)' }, ticks: { callback: (value) => `${value}%` }, grid: { drawOnChartArea: false } },
+                    } },
                 },
             },
-        },
-        importance: {
-            type: 'bar',
-            data: {
-                labels: data.featureImportance.map((feature) => feature.label),
-                datasets: [{
-                    label: 'Kontribusi fitur (%)', data: data.featureImportance.map((feature) => feature.persentase),
-                    backgroundColor: featureColors, borderRadius: 5, maxBarThickness: 26,
-                }],
-            },
-            options: {
-                ...options,
-                indexAxis: 'y',
-                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `Kontribusi: ${percent(context.raw)}` } } },
-                scales: {
-                    x: { min: 0, max: 100, ticks: { callback: (value) => `${value}%` }, grid: { color: '#f1f5f9' } },
-                    y: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                },
-            },
-        },
-    };
+        };
+    }
+    return configs;
 }
 
-export function renderDashboardCharts(root = document) {
+function showChartError(root, name, canvas) {
+    if (canvas) canvas.hidden = true;
+    const loading = root.querySelector(`[data-chart-loading="${name}"]`);
+    if (loading) loading.hidden = true;
+    const notice = root.querySelector(`[data-chart-error="${name}"]`);
+    if (notice) notice.hidden = false;
+    const fallback = root.querySelector(`[data-chart-fallback="${name}"]`);
+    if (fallback) fallback.open = true;
+}
+
+export function renderDashboardCharts(root = document, chartLibrary = Chart) {
     const dataElement = root.querySelector('#dashboard-chart-data');
     if (!dataElement) return [];
 
-    const configs = dashboardChartConfigs(JSON.parse(dataElement.textContent));
+    let configs;
+    try {
+        configs = dashboardChartConfigs(JSON.parse(dataElement.textContent));
+    } catch {
+        for (const name of ['akademik', 'aktual', 'prediksi']) showChartError(root, name, root.querySelector(`#${name}-chart`));
+        return [];
+    }
+
     const charts = [];
     for (const [name, config] of Object.entries(configs)) {
         const canvas = root.querySelector(`#${name}-chart`);
         if (!canvas) continue;
-        Chart.getChart(canvas)?.destroy();
-        charts.push(new Chart(canvas, config));
+        try {
+            chartLibrary.getChart(canvas)?.destroy();
+            canvas.hidden = false;
+            const notice = root.querySelector(`[data-chart-error="${name}"]`);
+            if (notice) notice.hidden = true;
+            charts.push(new chartLibrary(canvas, config));
+            const loading = root.querySelector(`[data-chart-loading="${name}"]`);
+            if (loading) loading.hidden = true;
+        } catch {
+            chartLibrary.getChart(canvas)?.destroy();
+            showChartError(root, name, canvas);
+        }
     }
-
-    root.querySelector('[data-dashboard-filter]')?.addEventListener('change', (event) => {
-        event.currentTarget.form.requestSubmit();
-    });
     return charts;
 }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\PenilaianPkpa;
+
 class RadarChartService
 {
     /** @param list<float> $values
@@ -39,8 +41,11 @@ class RadarChartService
                 imagefilledellipse($image, $points[$index * 2], $points[$index * 2 + 1], 7, 7, $teal);
             }
             $labels = $this->points(array_fill(0, 6, 117));
+            $featureLabels = array_values(PenilaianPkpa::FEATURE_LABELS);
             for ($index = 0; $index < 6; $index++) {
-                imagestring($image, 4, $labels[$index * 2] - 9, $labels[$index * 2 + 1] - 8, 'X'.($index + 1), $text);
+                $label = $featureLabels[$index];
+                $left = $labels[$index * 2] - (int) round(strlen($label) * imagefontwidth(4) / 2);
+                imagestring($image, 4, $left, $labels[$index * 2 + 1] - 8, $label, $text);
             }
             imagestring($image, 3, 145, 430, 'Nilai peserta', $teal);
             imagestring($image, 3, 335, 430, 'Standar minimum', $amber);

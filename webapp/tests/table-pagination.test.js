@@ -39,6 +39,27 @@ test('an opted-in error state retains the previous table and retries the failed 
     }
 });
 
+test('pagination announces a context-specific failure message when supplied by the prediction view', async () => {
+    const h = harness(async () => { throw new Error('Offline'); });
+    const error = {
+        hidden: true,
+        dataset: { paginationErrorMessage: 'Riwayat prediksi belum dapat dimuat. Silakan coba lagi.' },
+        querySelector: () => ({ href: '' }),
+    };
+    const querySelector = h.root.region.querySelector;
+    h.root.region.querySelector = (selector) => selector === '[data-pagination-error]' ? error : querySelector(selector);
+
+    try {
+        await h.click(secondUrl).result;
+
+        assert.equal(error.hidden, false);
+        assert.equal(h.status.textContent, 'Riwayat prediksi belum dapat dimuat. Silakan coba lagi.');
+        assert.deepEqual(h.navigations, []);
+    } finally {
+        h.stop();
+    }
+});
+
 function harness(fetchPage = async (url) => response(`page-${new URL(url).searchParams.get('page')}`)) {
     const listeners = new Map();
     const browserListeners = new Map();

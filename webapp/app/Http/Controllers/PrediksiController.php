@@ -20,15 +20,42 @@ class PrediksiController extends Controller
 {
     public function index(Request $request): View
     {
-        $filters = $request->validate(['angkatan_id' => ['nullable', 'integer', 'exists:angkatan_pkpa,id']]);
+        $filters = $request->validate([
+            'angkatan_id' => ['nullable', 'integer', 'exists:angkatan_pkpa,id'],
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $riwayat = HasilPrediksi::with(['peserta.angkatan', 'penilaian', 'modelMl', 'prediktor'])
+            ->when($filters['angkatan_id'] ?? null, fn ($query, $id) => $query->whereHas('peserta', fn ($query) => $query->where('angkatan_id', $id)))
+            ->when($filters['q'] ?? null, fn ($query, $q) => $query->whereHas('peserta', fn ($query) => $query->where(fn ($query) => $query->where('nama_lengkap', 'like', '%'.$q.'%')->orWhere('nomor_peserta', 'like', '%'.$q.'%'))))
+            ->latest('id')->paginate(20)->withQueryString();
 
         return view('prediksi.index', [
-            'angkatan' => AngkatanPkpa::withCount('peserta')->orderByDesc('tanggal_mulai')->get(),
+            'angkatan' => AngkatanPkpa::withCount([
+                'peserta',
+                'peserta as peserta_siap_count' => fn ($query) => $query->whereHas('penilaian'),
+            ])->orderByDesc('tanggal_mulai')->get(),
             'modelAktif' => ModelMl::where('is_active', true)->first(),
-            'riwayat' => HasilPrediksi::with(['peserta.angkatan', 'modelMl', 'prediktor'])
-                ->when($filters['angkatan_id'] ?? null, fn ($query, $id) => $query->whereHas('peserta', fn ($query) => $query->where('angkatan_id', $id)))
-                ->latest('id')->paginate(20)->withQueryString(),
+            'features' => PenilaianPkpa::FEATURE_LABELS,
+            'riwayat' => $riwayat,
+            'recommendations' => $riwayat->getCollection()->mapWithKeys(fn (HasilPrediksi $result): array => [
+                $result->id => $this->presentRecommendation($result->rekomendasi_tindak_lanjut),
+            ]),
         ]);
+    }
+
+    /** @return array{focus: list<string>, text: string} */
+    private function presentRecommendation(string $recommendation): array
+    {
+        $focus = [];
+        foreach (PenilaianPkpa::FEATURE_LABELS as $label) {
+            $label = str_replace(' (%)', '', $label);
+            if (mb_stripos($recommendation, $label) !== false) {
+                $focus[] = $label;
+            }
+        }
+
+        return ['focus' => $focus, 'text' => str_ireplace('standar minimal', 'ambang simulasi', $recommendation)];
     }
 
     public function individual(Request $request, PesertaPkpa $peserta, RandomForestService $service): RedirectResponse

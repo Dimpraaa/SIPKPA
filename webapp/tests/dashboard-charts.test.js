@@ -3,14 +3,17 @@ import { test } from 'node:test';
 import Chart from 'chart.js/auto';
 import { renderDashboardCharts } from '../resources/js/dashboard-charts.js';
 import { renderParticipantRadar } from '../resources/js/participant-radar.js';
+import { renderCohortComparison } from '../resources/js/cohort-comparison.js';
 
 function canvasContext() {
     let draws = 0;
+    const labels = [];
     const canvas = { width: 800, height: 400 };
     const context = new Proxy({
         canvas,
         measureText: (text) => ({ width: String(text).length * 7 }),
         getLineDash: () => [],
+        fillText: (text) => { labels.push(text); draws += 1; },
     }, {
         get(target, key) {
             if (key in target) return target[key];
@@ -18,53 +21,45 @@ function canvasContext() {
         },
     });
     canvas.getContext = () => context;
-    return { canvas, draws: () => draws };
+    return { canvas, draws: () => draws, labels };
 }
 
 const data = {
-    proporsi: { labels: ['Lulus', 'Berisiko Tidak Lulus'], values: [2, 1] },
-    tren: {
-        labels: ['Angkatan X', 'Angkatan XI', 'Angkatan XII'],
-        komponen: ['Kehadiran', 'Kode Etik', 'Hukum Acara', 'Tugas Praktik', 'Keaktifan', 'Simulasi UPA'].map((label) => ({ label, values: [80, 0, 75] })),
-        kelulusan: [50, 0, null],
-    },
-    featureImportance: [30, 5, 25, 20, 10, 10].map((persentase, index) => ({ label: `X${index + 1}`, persentase })),
+    akademik: { labels: ['Angkatan X', 'Angkatan XI', 'Angkatan XII'], values: [42, 0, null] },
+    aktual: { labels: ['Lulus', 'Tidak Lulus', 'Belum Ditentukan', 'Belum dinilai'], values: [1, 2, 1, 1] },
 };
 
-test('Chart.js renders all dashboard types with real controllers and preserves null gaps and zeros', () => {
-    const targets = Object.fromEntries(['proporsi', 'tren', 'importance'].map((name) => [`#${name}-chart`, canvasContext()]));
-    const filter = { form: { requestSubmit: () => { submitted += 1; } } };
-    let submitted = 0;
-    let onChange;
+test('Chart.js renders two single-purpose charts without mixing units and preserves missing scores and zeros', () => {
+    const targets = Object.fromEntries(['akademik', 'aktual'].map((name) => [`#${name}-chart`, canvasContext()]));
     const root = {
         querySelector(selector) {
             if (selector === '#dashboard-chart-data') return { textContent: JSON.stringify(data) };
-            if (selector === '[data-dashboard-filter]') return { addEventListener: (name, callback) => { onChange = callback; } };
             return targets[selector]?.canvas ?? null;
         },
     };
     const charts = renderDashboardCharts(root);
     try {
-        assert.equal(charts.length, 3);
-        const [donut, trend, importance] = charts;
-        assert.ok(targets['#proporsi-chart'].draws() > 0);
-        assert.ok(targets['#tren-chart'].draws() > 0);
-        assert.ok(targets['#importance-chart'].draws() > 0);
-        const arc = donut.getDatasetMeta(0).data[0];
-        assert.ok(Math.abs(arc.circumference - (Math.PI * 4 / 3)) < 0.00001);
-        assert.equal(trend.getDatasetMeta(0).type, 'bar');
-        assert.equal(trend.getDatasetMeta(6).type, 'line');
-        assert.equal(trend.getDatasetMeta(6).data[1].skip, false);
-        assert.equal(trend.getDatasetMeta(6).data[2].skip, true);
-        assert.equal(trend.options.scales.nilai.max, 100);
-        assert.equal(trend.options.scales.kelulusan.max, 100);
-        assert.equal(importance.getDatasetMeta(0).data[0].horizontal, true);
-        assert.deepEqual(importance.data.datasets[0].data, [30, 5, 25, 20, 10, 10]);
-        onChange({ currentTarget: filter });
-        assert.equal(submitted, 1);
+        assert.equal(charts.length, 2);
+        const [academic, actual] = charts;
+        assert.ok(targets['#akademik-chart'].draws() > 0);
+        assert.ok(targets['#aktual-chart'].draws() > 0);
+        assert.equal(actual.getDatasetMeta(0).type, 'bar');
+        assert.equal(actual.getDatasetMeta(0).data[0].horizontal, true);
+        assert.equal(actual.options.scales.x.min, 0);
+        assert.ok(targets['#aktual-chart'].labels.includes('1 · 20,0%'));
+        assert.ok(targets['#akademik-chart'].labels.includes('0,00'));
+        assert.equal(academic.data.datasets.length, 1);
+        assert.equal(academic.getDatasetMeta(0).type, 'bar');
+        assert.equal(academic.getDatasetMeta(0).data[0].horizontal, true);
+        assert.equal(academic.getDatasetMeta(0).controller.getParsed(1).x, 0);
+        assert.equal(academic.getDatasetMeta(0).controller.getParsed(2).x, null);
+        assert.equal(academic.options.scales.x.max, 100);
+        assert.deepEqual(academic.data.datasets[0].data, [42, 0, null]);
+        assert.deepEqual(actual.data.datasets[0].data, [1, 2, 1, 1]);
+        assert.equal(academic.options.animation, false);
 
         const refreshed = renderDashboardCharts(root);
-        assert.equal(refreshed.length, 3);
+        assert.equal(refreshed.length, 2);
         refreshed.forEach((chart) => chart.destroy());
     } finally {
         charts.forEach((chart) => chart.destroy());
@@ -75,10 +70,90 @@ test('dashboard rendering skips absent canvases and non-dashboard pages safely',
     assert.deepEqual(renderDashboardCharts({ querySelector: () => null }), []);
     assert.deepEqual(renderDashboardCharts({
         querySelector: (selector) => selector === '#dashboard-chart-data'
-            ? { textContent: JSON.stringify({ ...data, proporsi: { ...data.proporsi, values: [0, 0] }, featureImportance: [] }) }
+            ? { textContent: JSON.stringify(data) }
             : null,
     }), []);
     assert.equal(Object.keys(Chart.instances).length, 0);
+});
+
+test('prediction composition counts only predicted participants and preserves a zero-count class', () => {
+    const target = canvasContext();
+    const root = {
+        querySelector(selector) {
+            if (selector === '#dashboard-chart-data') return { textContent: JSON.stringify({ ...data, prediksi: { labels: ['Lulus', 'Berisiko Tidak Lulus'], values: [3, 0] } }) };
+            return selector === '#prediksi-chart' ? target.canvas : null;
+        },
+    };
+
+    const charts = renderDashboardCharts(root);
+    try {
+        assert.equal(charts.length, 1);
+        const [prediction] = charts;
+        assert.equal(prediction.getDatasetMeta(0).type, 'doughnut');
+        assert.deepEqual(prediction.data.datasets[0].data, [3, 0]);
+        assert.equal(prediction.getDatasetMeta(0).data[1].circumference, 0);
+        assert.ok(target.labels.includes('3'));
+        assert.ok(target.labels.includes('terprediksi'));
+        assert.equal(prediction.options.animation, false);
+    } finally {
+        charts.forEach((chart) => chart.destroy());
+    }
+});
+
+test('cohort comparison renders backend averages on a fixed academic scale including zero and missing assessment', () => {
+    const target = canvasContext();
+    const root = {
+        querySelector(selector) {
+            if (selector === '#cohort-comparison-data') return { textContent: JSON.stringify({ labels: ['A', 'B', 'C'], values: [50, 0, null], counts: [2, 1, 0], ids: [1, 2, 3], selected: 1 }) };
+            return selector === '#cohort-comparison-chart' ? target.canvas : null;
+        },
+    };
+    const chart = renderCohortComparison(root);
+    try {
+        assert.ok(target.draws() > 0);
+        assert.equal(chart.options.scales.x.min, 0);
+        assert.equal(chart.options.scales.x.max, 100);
+        assert.deepEqual(chart.data.datasets[0].data, [50, 0, null]);
+        assert.ok(target.labels.includes('0,00'));
+        assert.notEqual(chart.data.datasets[0].backgroundColor[0], chart.data.datasets[0].backgroundColor[1]);
+    } finally {
+        chart.destroy();
+    }
+    assert.equal(renderCohortComparison({ querySelector: () => null }), null);
+});
+
+test('invalid chart data reveals notices and opens the numeric fallback without fabricating values', () => {
+    const canvas = { hidden: false };
+    const notice = { hidden: true };
+    const fallback = { open: false };
+    const targets = { '#dashboard-chart-data': { textContent: '{invalid json' }, '#akademik-chart': canvas, '[data-chart-error="akademik"]': notice, '[data-chart-fallback="akademik"]': fallback };
+
+    const charts = renderDashboardCharts({ querySelector: (selector) => targets[selector] ?? null });
+
+    assert.deepEqual(charts, []);
+    assert.equal(canvas.hidden, true);
+    assert.equal(notice.hidden, false);
+    assert.equal(fallback.open, true);
+});
+
+test('a chart construction failure reveals only its fallback and leaves backend data untouched', () => {
+    const canvas = { hidden: false };
+    const notice = { hidden: true };
+    const fallback = { open: false };
+    const serialized = JSON.stringify(data);
+    const targets = { '#dashboard-chart-data': { textContent: serialized }, '#akademik-chart': canvas, '[data-chart-error="akademik"]': notice, '[data-chart-fallback="akademik"]': fallback };
+    class UnavailableChart {
+        static getChart() { return null; }
+        constructor() { throw new Error('Canvas unavailable'); }
+    }
+
+    const charts = renderDashboardCharts({ querySelector: (selector) => targets[selector] ?? null }, UnavailableChart);
+
+    assert.deepEqual(charts, []);
+    assert.equal(canvas.hidden, true);
+    assert.equal(notice.hidden, false);
+    assert.equal(fallback.open, true);
+    assert.equal(targets['#dashboard-chart-data'].textContent, serialized);
 });
 
 test('participant radar renders six scores including zero and correct attendance threshold', () => {
@@ -88,7 +163,7 @@ test('participant radar renders six scores including zero and correct attendance
     const root = {
         querySelector(selector) {
             if (selector === '#participant-radar') return target.canvas;
-            if (selector === '#participant-radar-data') return { textContent: JSON.stringify({ labels: data.tren.komponen.map((item) => item.label), values, standards }) };
+            if (selector === '#participant-radar-data') return { textContent: JSON.stringify({ labels: ['Kehadiran', 'Kode Etik', 'Hukum Acara', 'Tugas Praktik', 'Keaktifan', 'Simulasi UPA'], values, standards }) };
             return null;
         },
     };

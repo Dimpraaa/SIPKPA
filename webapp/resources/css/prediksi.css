@@ -1,0 +1,72 @@
+@layer components {
+    .prediksi-research-note { @apply mb-6 border-l-2 px-4 py-1 text-sm leading-6; border-color: var(--peserta-accent); color: var(--peserta-muted); }
+    .prediksi-operations { @apply mb-6; }
+    .prediksi-model { @apply flex flex-wrap items-center justify-between gap-4 border-l-4 border-teal-700 bg-teal-50 px-5 py-5; border-top-left-radius: var(--radius-panel); border-top-right-radius: var(--radius-panel); }
+    .prediksi-model h2 { color: var(--peserta-primary); overflow-wrap: anywhere; }
+    .prediksi-eyebrow { @apply text-[10px] font-semibold tracking-widest uppercase; color: var(--brand); }
+    .batch-readiness { @apply mt-3 h-1 max-w-64 bg-slate-200; }
+    .batch-readiness > span { display: block; height: 100%; background: var(--brand); }
+    .prediksi-batch-heading { @apply border-t px-5 pt-4; border-color: var(--peserta-border); }
+    .prediksi-batch-list { @apply px-5; }
+    .prediksi-batch-list li { @apply flex flex-wrap items-center justify-between gap-4 py-4; }
+    .prediksi-batch-list li + li { border-top: 1px solid var(--peserta-border); }
+    .prediksi-batch-list h3 { overflow-wrap: anywhere; }
+    .prediksi-page .btn:disabled { cursor: not-allowed; }
+    .prediksi-filters { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) auto; }
+    .prediksi-filters .peserta-search { grid-column: auto; }
+    .prediksi-filters .peserta-filter-actions { grid-column: auto; }
+    .prediksi-table { min-width: 960px; }
+    .prediksi-table.peserta-table-is-empty { min-width: 0; }
+    .prediksi-table .peserta-identity { min-width: 11rem; width: 22%; }
+    .prediksi-cohort { @apply min-w-30; color: var(--muted); overflow-wrap: anywhere; }
+    .prediksi-result { min-width: 11rem; }
+    .prediksi-meta { @apply mt-1 text-xs leading-4 text-slate-600; overflow-wrap: anywhere; }
+    .prediksi-estimate-help { @apply px-5 pb-3 text-xs leading-5 text-slate-600; }
+    .prediksi-probabilities { @apply grid min-w-32 gap-1 text-xs leading-5; }
+    .prediksi-probabilities > div { @apply grid grid-cols-[1fr_auto] gap-x-3; }
+    .probability-track { @apply mt-1 mb-1 h-1 bg-slate-200; grid-column: 1 / -1; }
+    .probability-track > span { display: block; height: 100%; background: var(--brand); }
+    .metric-meter.probability-risk > span { background: var(--warning); }
+    .prediksi-probabilities dt { @apply whitespace-nowrap text-slate-600; }
+    .prediksi-probabilities dd { @apply whitespace-nowrap text-right font-medium tabular-nums; }
+    .prediksi-summary { @apply min-w-36 text-xs leading-5 text-slate-600; max-width: 14rem; overflow-wrap: anywhere; }
+    .prediksi-table .peserta-detail { @apply whitespace-nowrap; }
+
+    .prediksi-dialog { @apply m-auto border bg-white p-0 text-left text-sm font-normal text-slate-900; border-radius: var(--radius-panel); box-shadow: var(--elevation-float); width: min(48rem, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 48px); overflow-y: auto; border-color: var(--peserta-border); white-space: normal; }
+    .prediksi-dialog::backdrop { background: rgb(16 47 40 / 50%); }
+    .prediksi-dialog-header { @apply sticky top-0 z-10 flex items-start justify-between gap-4 border-t-4 border-b border-t-teal-700 bg-white px-6 py-5; border-bottom-color: var(--peserta-border); }
+    .prediksi-dialog-header h2 { color: var(--peserta-primary); overflow-wrap: anywhere; font-family: var(--font-display); font-size: 1.75rem; font-weight: 400; }
+    .prediksi-dialog-header form { @apply shrink-0; }
+    .prediksi-dialog-body { @apply px-6; }
+    .prediksi-dialog-body > p { @apply py-5; }
+    .prediksi-dialog-body section { @apply border-t py-5; border-color: var(--peserta-border); }
+    .prediksi-detail-heading { @apply text-sm font-semibold; color: var(--peserta-primary); }
+    .prediksi-detail-results { @apply mt-4 grid grid-cols-3 gap-4; }
+    .prediksi-detail-results > div { @apply min-w-0; }
+    .prediksi-detail-results dd.font-semibold { @apply text-2xl tracking-tight; }
+    .prediksi-detail-results dt, .prediksi-detail-metadata dt, .prediksi-detail-features dt { @apply text-xs leading-5 text-slate-600; }
+    .prediksi-detail-results dd, .prediksi-detail-metadata dd, .prediksi-detail-features dd { @apply mt-1 leading-6; overflow-wrap: anywhere; }
+    .prediksi-detail-metadata { @apply mt-5 grid grid-cols-3 gap-4; }
+    .prediksi-detail-features { @apply mt-4 grid grid-cols-3 gap-x-5 gap-y-4; }
+    .prediksi-recommendation { @apply mt-3 border-l-2 border-teal-600 bg-slate-50 px-4 py-3 whitespace-pre-line text-sm leading-6; overflow-wrap: anywhere; }
+    .prediksi-dialog-footer { @apply grid gap-4 border-t bg-slate-50 px-6 py-5; border-color: var(--peserta-border); }
+    .prediksi-dialog-footer > p { overflow-wrap: anywhere; }
+    .prediksi-page:has(.prediksi-dialog[open]) { overflow: hidden; }
+
+    @media (max-width: 767px) {
+        .prediksi-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        .prediksi-filters .peserta-filter-actions { grid-column: 1 / -1; }
+        .prediksi-detail-results, .prediksi-detail-features { @apply grid-cols-2; }
+        .prediksi-detail-results > div:first-child { grid-column: 1 / -1; }
+        .prediksi-detail-metadata { @apply grid-cols-1 gap-3; }
+    }
+
+    @media (max-width: 479px) {
+        .prediksi-filters { grid-template-columns: minmax(0, 1fr); }
+        .prediksi-model, .prediksi-dialog-header, .prediksi-dialog-footer { @apply px-4; }
+        .prediksi-batch-heading, .prediksi-batch-list, .prediksi-dialog-body { @apply px-4; }
+        .prediksi-estimate-help { @apply px-4; }
+        .prediksi-batch-list form, .prediksi-batch-list .btn { width: 100%; }
+        .prediksi-dialog-footer .flex > a, .prediksi-dialog-footer .flex > form, .prediksi-dialog-footer .btn { width: 100%; }
+    }
+}

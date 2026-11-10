@@ -17,6 +17,7 @@ class ModelMlController extends Controller
     {
         return view('model.index', [
             'models' => ModelMl::with('pembuat')->latest('id')->paginate(10),
+            'modelAktif' => ModelMl::where('is_active', true)->first(),
             'jumlahHistoris' => PenilaianPkpa::whereIn('status_aktual', ['Lulus', 'Tidak Lulus'])->count(),
             'features' => PenilaianPkpa::FEATURE_LABELS,
         ]);

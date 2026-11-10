@@ -1,0 +1,43 @@
+@layer components {
+    .peringatan-export-actions { @apply flex flex-wrap gap-3; }
+    .peringatan-context { @apply mb-6 border-l-2 border-amber-600 bg-amber-50 px-5 py-4 text-sm leading-6; color: var(--peserta-muted); }
+    .peringatan-context .eyebrow { color: var(--warning); }
+    .peringatan-context strong { @apply font-medium; }
+    .peringatan-context details { @apply mt-2 text-xs; }
+    .peringatan-context summary { @apply w-fit cursor-pointer rounded-sm py-1 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600; }
+    .peringatan-context details p { @apply mt-2 max-w-4xl leading-6; }
+    .peringatan-filters { grid-template-columns: minmax(12rem, 1.4fr) minmax(9rem, 1fr) minmax(10rem, 1fr) minmax(12rem, 1.3fr); }
+    .peringatan-filters .peserta-filter-actions { grid-column: 1 / -1; }
+    .peringatan-filters .label { @apply leading-5; }
+    .peringatan-table-help { @apply px-5 pb-3 text-xs leading-5 text-slate-600; }
+    .peringatan-table { min-width: 960px; }
+    .peringatan-table.peserta-table-is-empty { min-width: 0; }
+    .peringatan-table .peserta-identity { min-width: 11rem; width: 23%; }
+    .peringatan-cohort { min-width: 7.5rem; overflow-wrap: anywhere; color: var(--muted); }
+    .peringatan-indicators { min-width: 12rem; }
+    .peringatan-indicators ul { @apply grid gap-1 text-xs leading-5; }
+    .peringatan-indicators li { @apply flex justify-between gap-3; }
+    .peringatan-indicators li > span:last-child { @apply whitespace-nowrap; }
+    .peringatan-model { min-width: 13rem; }
+    .peringatan-table .peserta-detail { @apply whitespace-nowrap; }
+    .peringatan-stale { @apply mt-1 text-xs leading-5; color: var(--warning); }
+    .peringatan-threshold, .peringatan-condition { @apply mt-1 block text-xs leading-5 text-slate-600; }
+    .peringatan-below { @apply font-medium; color: var(--warning); }
+    .peringatan-page:has(.prediksi-dialog[open]) { overflow: hidden; }
+
+    @media (max-width: 1279px) {
+        .peringatan-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    }
+
+    @media (max-width: 767px) {
+        .peringatan-filters .peserta-search { grid-column: auto; }
+    }
+
+    @media (max-width: 479px) {
+        .peringatan-filters { grid-template-columns: minmax(0, 1fr); }
+        .peringatan-export-actions { @apply w-full; }
+        .peringatan-export-actions a { @apply flex-1; }
+        .peringatan-table-help { @apply px-4; }
+        .peringatan-page .prediksi-dialog-footer .flex > a { width: 100%; }
+    }
+}

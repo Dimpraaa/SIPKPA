@@ -1,20 +1,33 @@
 @extends('laporan.pdf.layout')
+
 @section('content')
-    <p class="meta">{{ $kode }} · Angkatan: {{ $selected?->nama_angkatan ?? 'Semua angkatan' }} · Jumlah peserta: {{ $total }} · Pencarian: {{ $filters['q'] ?? 'Semua' }}@if ($risiko) · Peluang gagal minimum: {{ $filters['min_gagal'] ?? 0 }}%@endif</p>
-    <p class="meta">Nilai berwarna merah berada di bawah standar: kehadiran 80%, komponen akademik 70. Prediksi yang digunakan adalah hasil terbaru setiap peserta.</p>
+    <p class="meta">Angkatan: {{ $selected?->nama_angkatan ?? 'Semua angkatan' }} · Jumlah peserta: {{ $total }} · Pencarian: {{ $filters['q'] ?? 'Semua' }}@if ($risiko) · Ambang Risiko Minimum: {{ number_format((float) ($filters['min_gagal'] ?? 0), 2, ',', '.') }}%@endif</p>
+    <p class="meta"><span class="dot"></span>Di bawah standar: kehadiran &lt;{{ $standards['persen_kehadiran'] }}% atau nilai akademik &lt;{{ $standards['nilai_kode_etik'] }}. Prediksi menggunakan hasil terakhir setiap peserta.</p>
     <table>
-        <thead><tr>@foreach ($pdfColumns as $key => $label)<th @if ($key === 'no') style="width:18px" @elseif ($key === 'nama_lengkap') style="width:85px" @elseif ($key === 'nomor_peserta') style="width:83px" @endif>{{ $label }}</th>@endforeach</tr></thead>
+        <thead>
+            <tr>
+                @foreach ($pdfColumns as $key => $label)
+                    <th @if ($key === 'no') style="width:18px" @elseif ($key === 'nama_lengkap') style="width:85px" @elseif ($key === 'nomor_peserta') style="width:83px" @endif>{{ $label }}</th>
+                @endforeach
+            </tr>
+        </thead>
         <tbody>
             @forelse ($rows as $row)
                 <tr>
                     @foreach ($pdfColumns as $key => $label)
-                        <td @if (isset($standards[$key]) && $row[$key] !== null && $row[$key] < $standards[$key]) class="low" @endif>
-                            {{ is_float($row[$key]) ? number_format($row[$key], 2, ',', '.') : ($row[$key] ?? '—') }}
+                        <td @class(['number' => isset($standards[$key]) || in_array($key, ['no', 'nilai_akhir_rata', 'probabilitas_lulus', 'probabilitas_gagal']), 'identifier' => $key === 'nomor_peserta'])>
+                            <span @class(['low' => isset($standards[$key]) && $row[$key] !== null && $row[$key] < $standards[$key]])>{{ is_float($row[$key]) ? number_format($row[$key], 2, ',', '.') : ($row[$key] ?? '—') }}</span>
                         </td>
                     @endforeach
                 </tr>
                 @if ($row['model'])
-                    <tr><td colspan="{{ count($pdfColumns) }}" class="note"><strong>{{ $row['nomor_peserta'] }} · Model: {{ $row['model'] }} · {{ $row['tanggal_prediksi'] }}</strong><br>Rekomendasi: {{ $row['rekomendasi'] }}@if ($row['nilai_diperbarui'])<br>Nilai telah diperbarui setelah prediksi. Jalankan ulang prediksi untuk evaluasi terkini.@endif</td></tr>
+                    <tr>
+                        <td colspan="{{ count($pdfColumns) }}" class="note">
+                            <strong>{{ $row['nomor_peserta'] }} · Model: {{ $row['model'] }} · {{ $row['tanggal_prediksi'] }}</strong><br>
+                            Rekomendasi: {{ $row['rekomendasi'] }}
+                            @if ($row['nilai_diperbarui'])<br>Nilai telah diperbarui. Jalankan ulang prediksi untuk memperbarui rekomendasi.@endif
+                        </td>
+                    </tr>
                 @endif
             @empty
                 <tr><td colspan="{{ count($pdfColumns) }}" style="text-align:center;padding:20px">Tidak ada peserta yang sesuai filter laporan.</td></tr>

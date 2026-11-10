@@ -39,8 +39,10 @@ class DashboardController extends Controller
         ];
 
         $agregatNilai = PenilaianPkpa::join('peserta_pkpa', 'peserta_pkpa.id', '=', 'penilaian_pkpa.peserta_id')
+            ->when($angkatanId !== null, fn (Builder $query): Builder => $query->where('peserta_pkpa.angkatan_id', $angkatanId))
             ->select('peserta_pkpa.angkatan_id')
             ->selectRaw('COUNT(*) as jumlah_penilaian')
+            ->selectRaw('AVG(penilaian_pkpa.nilai_akhir_rata) as nilai_akhir_rata')
             ->selectRaw('SUM(CASE WHEN status_aktual = ? THEN 1 ELSE 0 END) as jumlah_lulus', ['Lulus'])
             ->selectRaw('SUM(CASE WHEN status_aktual IN (?, ?) THEN 1 ELSE 0 END) as jumlah_ditentukan', ['Lulus', 'Tidak Lulus']);
         foreach (array_keys(PenilaianPkpa::FEATURE_LABELS) as $feature) {
@@ -48,7 +50,8 @@ class DashboardController extends Controller
         }
         $agregatNilai = $agregatNilai->groupBy('peserta_pkpa.angkatan_id')->get()->keyBy('angkatan_id');
 
-        $tren = $angkatan->map(function (AngkatanPkpa $item) use ($agregatNilai): array {
+        $angkatanDitampilkan = $angkatanId !== null ? $angkatan->where('id', $angkatanId) : $angkatan;
+        $tren = $angkatanDitampilkan->map(function (AngkatanPkpa $item) use ($agregatNilai): array {
             $agregat = $agregatNilai->get($item->id);
             $rataRata = [];
             foreach (array_keys(PenilaianPkpa::FEATURE_LABELS) as $feature) {
@@ -62,41 +65,57 @@ class DashboardController extends Controller
                 'peserta' => $item->peserta_count,
                 'jumlah_penilaian' => (int) ($agregat?->jumlah_penilaian ?? 0),
                 'rata_rata' => $rataRata,
+                'nilai_akhir_rata' => $agregat !== null ? round((float) $agregat->nilai_akhir_rata, 2) : null,
                 'lulus_aktual' => $lulus,
                 'status_ditentukan' => $ditentukan,
                 'persentase_kelulusan' => $ditentukan > 0 ? round($lulus / $ditentukan * 100, 2) : null,
             ];
-        })->all();
+        })->values()->all();
+
+        $jumlahPenilaian = array_sum(array_column($tren, 'jumlah_penilaian'));
+        $jumlahLulusAktual = array_sum(array_column($tren, 'lulus_aktual'));
+        $jumlahStatusDitentukan = array_sum(array_column($tren, 'status_ditentukan'));
+        $akademik = [
+            'dinilai' => $jumlahPenilaian,
+            'belum_dinilai' => $jumlahPeserta - $jumlahPenilaian,
+            'status_ditentukan' => $jumlahStatusDitentukan,
+            'lulus' => $jumlahLulusAktual,
+            'tidak_lulus' => $jumlahStatusDitentukan - $jumlahLulusAktual,
+            'belum_ditentukan' => $jumlahPenilaian - $jumlahStatusDitentukan,
+        ];
 
         $featureImportance = [];
         foreach (PenilaianPkpa::FEATURE_LABELS as $feature => $label) {
             $value = $modelAktif?->feature_importance_json[$feature] ?? null;
             $featureImportance[] = [
                 'fitur' => $feature,
-                'label' => 'X'.(count($featureImportance) + 1).' · '.$label,
+                'label' => $label,
                 'persentase' => is_numeric($value) ? round((float) $value * 100, 2) : null,
             ];
         }
         $evaluasi = [];
-        foreach (['akurasi' => 'Accuracy / Akurasi', 'presisi' => 'Precision / Presisi', 'recall' => 'Recall', 'f1_score' => 'F1-Score'] as $metric => $label) {
+        foreach (['akurasi' => 'Akurasi', 'presisi' => 'Presisi', 'recall' => 'Recall', 'f1_score' => 'F1-Score'] as $metric => $label) {
             $evaluasi[] = ['label' => $label, 'nilai' => $modelAktif !== null ? (float) $modelAktif->{$metric} : null];
         }
         $confusionMatrix = $modelAktif?->confusion_matrix_json;
         $chartData = [
-            'proporsi' => ['labels' => ['Lulus', 'Berisiko Tidak Lulus'], 'values' => [$lulus, $berisiko]],
-            'tren' => [
+            'akademik' => [
                 'labels' => array_column($tren, 'angkatan'),
-                'komponen' => collect(PenilaianPkpa::FEATURE_LABELS)->map(fn (string $label, string $feature): array => [
-                    'label' => $label,
-                    'values' => array_map(fn (array $item): ?float => $item['rata_rata'][$feature], $tren),
-                ])->values()->all(),
-                'kelulusan' => array_column($tren, 'persentase_kelulusan'),
+                'values' => array_column($tren, 'nilai_akhir_rata'),
+                'counts' => array_column($tren, 'jumlah_penilaian'),
             ],
-            'featureImportance' => $modelAktif !== null ? $featureImportance : [],
+            'aktual' => [
+                'labels' => ['Lulus', 'Tidak Lulus', 'Belum Ditentukan', 'Belum dinilai'],
+                'values' => [$akademik['lulus'], $akademik['tidak_lulus'], $akademik['belum_ditentukan'], $akademik['belum_dinilai']],
+            ],
+            'prediksi' => [
+                'labels' => ['Lulus', 'Berisiko Tidak Lulus'],
+                'values' => [$lulus, $berisiko],
+            ],
         ];
 
         return view('dashboard', [
-            'angkatan' => $angkatan, 'angkatanTerpilih' => $angkatanTerpilih, 'ringkasan' => $ringkasan,
+            'angkatan' => $angkatan, 'angkatanTerpilih' => $angkatanTerpilih, 'ringkasan' => $ringkasan, 'akademik' => $akademik,
             'modelAktif' => $modelAktif, 'tren' => $tren, 'features' => PenilaianPkpa::FEATURE_LABELS,
             'featureImportance' => $featureImportance, 'evaluasi' => $evaluasi,
             'confusionMatrix' => $confusionMatrix, 'chartData' => $chartData,

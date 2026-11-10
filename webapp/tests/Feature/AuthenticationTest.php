@@ -18,7 +18,7 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
         $this->get(route('dashboard'))->assertRedirect(route('login'));
-        $this->get(route('login'))->assertOk()->assertSee('Selamat datang kembali');
+        $this->get(route('login'))->assertOk()->assertSee('Masuk ke akun');
 
         $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password123'])
             ->assertRedirect(route('dashboard'));
@@ -54,7 +54,7 @@ class AuthenticationTest extends TestCase
         $this->actingAs($user);
 
         foreach (['dashboard', 'angkatan.index', 'peserta.index', 'model.index', 'prediksi.index'] as $route) {
-            $this->get(route($route))->assertOk()->assertDontSee('Latih Model dengan Data Historis')->assertDontSee('Tambah peserta');
+            $this->get(route($route))->assertOk()->assertDontSee('action="'.route('model.store').'"', false)->assertDontSee('Tambah peserta');
         }
         $this->get(route('peserta.show', $peserta))->assertOk()->assertDontSee('Jalankan prediksi');
         foreach (['angkatan.create', 'peserta.create', 'penilaian.import', 'penilaian.template'] as $route) {
